@@ -107,8 +107,7 @@ Visit: `https://your-app.onrender.com`
 ## 📁 Project Structure
 
 ```
-fpl-leaderboard/
-├── render-app/              # Deploy to Render (UI only)
+fpl-leaderboard/            # Deploy to Render (UI only)
 │   ├── app.py              # Flask app - forwards requests
 │   ├── templates/
 │   │   ├── index.html      # Main leaderboard page
@@ -119,8 +118,6 @@ fpl-leaderboard/
 ├── local-worker/           # Run on your machine (processing)
 │   ├── worker.py          # Heavy FPL data processing
 │   ├── requirements.txt   # Python dependencies
-│   ├── start.bat          # Windows quick start
-│   └── start.sh           # Linux/Mac quick start
 │
 ├── test_email.py          # Test email configuration
 ├── SETUP_GUIDE.md         # Detailed setup instructions
