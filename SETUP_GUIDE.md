@@ -170,24 +170,6 @@ Create service to auto-start worker on boot
 # Create service
 nssm install FPLWorker "python" "C:\path\to\worker.py"
 ```
-
----
-
-## File Structure
-
-```
-├── render-app/              # Deploy to Render
-│   ├── app.py              # Lightweight Flask (UI only)
-│   ├── templates/
-│   │   └── index.html      # Frontend
-│   ├── requirements.txt
-│   └── render.yaml
-│
-├── local-worker/           # Run on your machine
-│   ├── worker.py          # Heavy processing
-│   └── requirements.txt
-```
-
 ---
 
 ## Notes
