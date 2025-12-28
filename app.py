@@ -166,8 +166,6 @@ def leaderboard():
     except requests.exceptions.Timeout:
         error_msg = 'Processing timeout after 5 minutes'
         print(f"❌ TIMEOUT: {error_msg}")
-        print("Triggering email alert...")
-        send_alert_email('Timeout', error_msg)
         print("=" * 80 + "\n")
         return jsonify({'error': 'Processing timeout. Please try again.'}), 504
         
@@ -175,19 +173,15 @@ def leaderboard():
         error_msg = f'Cannot connect to worker at {WORKER_URL}'
         print(f"❌ CONNECTION ERROR: {error_msg}")
         print(f"Details: {str(e)}")
-        print("Triggering email alert...")
-        send_alert_email('Connection Failed', error_msg)
         print("=" * 80 + "\n")
         return jsonify({
-            'error': 'Worker server not available. Admin has been notified. Please ensure local worker is running.'
+            'error': 'Worker server not available. Please check the status page and contact the developer if the issue persists.'
         }), 503
         
     except Exception as e:
         error_msg = str(e)
         print(f"❌ UNKNOWN ERROR: {error_msg}")
         print(f"Error type: {type(e).__name__}")
-        print("Triggering email alert...")
-        send_alert_email('Unknown Error', error_msg)
         print("=" * 80 + "\n")
         return jsonify({'error': str(e)}), 500
 
@@ -209,6 +203,74 @@ def health():
         ui_status['warning'] = 'Worker server is not responding'
     
     return jsonify(ui_status)
+
+
+@app.route('/contact-developer', methods=['POST'])
+def contact_developer():
+    """Manual contact endpoint - user triggers from status page"""
+    print("\n" + "=" * 80)
+    print("📧 CONTACT DEVELOPER REQUEST")
+    print("=" * 80)
+    
+    try:
+        # Get user information
+        user_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        user_agent = request.headers.get('User-Agent', 'Unknown')
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        print(f"User IP: {user_ip}")
+        print(f"User Agent: {user_agent}")
+        print(f"Timestamp: {timestamp}")
+        
+        # Check worker status
+        worker_status = "Unknown"
+        try:
+            response = requests.get(f'{WORKER_URL}/health', timeout=5)
+            if response.status_code == 200:
+                worker_status = "Online"
+            else:
+                worker_status = f"Offline (HTTP {response.status_code})"
+        except:
+            worker_status = "Offline (Connection Failed)"
+        
+        print(f"Worker Status: {worker_status}")
+        
+        # Compose detailed email
+        error_type = "User Contact Request"
+        error_message = f"""
+A user has requested assistance from the status page.
+
+User Information:
+- IP Address: {user_ip}
+- User Agent: {user_agent}
+- Timestamp: {timestamp}
+
+System Status:
+- Worker URL: {WORKER_URL}
+- Worker Status: {worker_status}
+
+The user likely encountered an issue with the service.
+Please investigate and respond if necessary.
+"""
+        
+        print("Sending notification email...")
+        send_alert_email(error_type, error_message.strip())
+        
+        print("✅ Contact request processed")
+        print("=" * 80 + "\n")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Developer has been notified'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error processing contact request: {str(e)}")
+        print("=" * 80 + "\n")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to send notification'
+        }), 500
 
 
 @app.route('/test-email', methods=['GET'])
