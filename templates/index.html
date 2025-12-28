@@ -91,6 +91,40 @@
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        .status-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+        }
+
+        .status-link:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 245, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .status-indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neon-cyan);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .form-container {
@@ -390,16 +424,32 @@
 
         .error {
             background: rgba(255, 0, 0, 0.1);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            border-radius: 8px;
-            padding: 20px;
+            border: 2px solid rgba(255, 0, 0, 0.5);
+            border-radius: 12px;
+            padding: 30px;
             margin: 20px 0;
             color: #ff6b6b;
             display: none;
+            text-align: center;
+            font-size: 1.1rem;
+            line-height: 1.6;
         }
 
         .error.active {
             display: block;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .error a {
+            color: var(--neon-cyan);
+            text-decoration: underline;
+            font-weight: 600;
         }
 
         .leaderboard-section {
@@ -630,6 +680,10 @@
         <div class="header">
             <h1>FPL LEADERBOARD</h1>
             <p>Gameweek Performance Tracker</p>
+            <a href="/status" class="status-link" target="_blank">
+                <span class="status-indicator-dot"></span>
+                Check Server Status
+            </a>
         </div>
 
         <div class="form-container">
@@ -754,10 +808,23 @@
                     body: formData
                 });
                 
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    throw new Error('⚠️ Backend server is not responding correctly. Please check the server status above.');
+                }
+                
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to fetch data');
+                    // Handle specific error cases
+                    if (response.status === 503) {
+                        throw new Error('🔌 Worker server is offline. Please ensure your local worker is running and ngrok tunnel is active. Check server status above for details.');
+                    } else if (response.status === 504) {
+                        throw new Error('⏱️ Request timed out. The league might be too large or the worker is overloaded. Please try again.');
+                    } else {
+                        throw new Error(data.error || 'Failed to fetch data. Please check server status above.');
+                    }
                 }
                 
                 progressFill.style.width = '100%';
@@ -766,7 +833,25 @@
                 loading.classList.remove('active');
                 
             } catch (err) {
-                error.textContent = err.message;
+                // Improve error messages
+                let errorMessage = err.message;
+                
+                // Handle JSON parse errors
+                if (err.message.includes('JSON') || err.message.includes('Unexpected token')) {
+                    errorMessage = '⚠️ Backend server is down or not responding correctly. Please check the server status above or contact the administrator.';
+                }
+                
+                // Handle network errors
+                if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                    errorMessage = '🌐 Network error. Please check your internet connection and try again.';
+                }
+                
+                // Handle connection errors
+                if (err.message.includes('connection') || err.message.includes('ECONNREFUSED')) {
+                    errorMessage = '🔌 Cannot connect to backend server. Please check server status above.';
+                }
+                
+                error.textContent = errorMessage;
                 error.classList.add('active');
                 loading.classList.remove('active');
             } finally {
