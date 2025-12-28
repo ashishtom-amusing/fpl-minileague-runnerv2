@@ -808,50 +808,63 @@
                     body: formData
                 });
                 
-                // Check if response is JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('⚠️ Backend server is not responding correctly. Please check the server status above.');
-                }
+                let data;
+                let errorMessage = '';
                 
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    // Handle specific error cases
-                    if (response.status === 503) {
-                        throw new Error('🔌 Worker server is offline. Please ensure your local worker is running and ngrok tunnel is active. Check server status above for details.');
-                    } else if (response.status === 504) {
-                        throw new Error('⏱️ Request timed out. The league might be too large or the worker is overloaded. Please try again.');
+                // Try to parse JSON response
+                try {
+                    const contentType = response.headers.get('content-type');
+                    if (contentType && contentType.includes('application/json')) {
+                        data = await response.json();
                     } else {
-                        throw new Error(data.error || 'Failed to fetch data. Please check server status above.');
+                        // Non-JSON response (HTML error page, etc)
+                        throw new Error('Server returned non-JSON response');
                     }
+                } catch (parseError) {
+                    // Failed to parse JSON - backend is down or returned HTML
+                    throw new Error('⚠️ Backend server is not responding correctly. Please check the server status above or contact the developer.');
                 }
                 
+                // Handle HTTP error codes
+                if (!response.ok) {
+                    if (response.status === 503) {
+                        errorMessage = '🔌 Worker server is offline. Please check the <a href="/status" target="_blank">server status page</a> and contact the developer if the issue persists.';
+                    } else if (response.status === 504) {
+                        errorMessage = '⏱️ Request timed out. The league might be too large or the worker is overloaded. Please try again.';
+                    } else if (data && data.error) {
+                        errorMessage = data.error;
+                    } else {
+                        errorMessage = `Server error (${response.status}). Please check the <a href="/status" target="_blank">server status page</a>.`;
+                    }
+                    throw new Error(errorMessage);
+                }
+                
+                // Success - display leaderboard
                 progressFill.style.width = '100%';
                 currentData = data;
                 displayLeaderboard(data);
                 loading.classList.remove('active');
                 
             } catch (err) {
-                // Improve error messages
-                let errorMessage = err.message;
+                // Display user-friendly error messages
+                let displayError = err.message;
                 
-                // Handle JSON parse errors
-                if (err.message.includes('JSON') || err.message.includes('Unexpected token')) {
-                    errorMessage = '⚠️ Backend server is down or not responding correctly. Please check the server status above or contact the administrator.';
+                // Catch remaining JSON parse errors
+                if (displayError.includes('JSON') || displayError.includes('Unexpected token') || displayError.includes('Unexpected end')) {
+                    displayError = '⚠️ Backend server is down or not responding correctly. Please check the <a href="/status" target="_blank">server status page</a> or contact the developer.';
                 }
                 
-                // Handle network errors
-                if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-                    errorMessage = '🌐 Network error. Please check your internet connection and try again.';
+                // Network errors
+                if (displayError.includes('Failed to fetch') || displayError.includes('NetworkError')) {
+                    displayError = '🌐 Network error. Please check your internet connection and try again.';
                 }
                 
-                // Handle connection errors
-                if (err.message.includes('connection') || err.message.includes('ECONNREFUSED')) {
-                    errorMessage = '🔌 Cannot connect to backend server. Please check server status above.';
+                // Connection refused
+                if (displayError.includes('connection') || displayError.includes('ECONNREFUSED')) {
+                    displayError = '🔌 Cannot connect to backend server. Please check the <a href="/status" target="_blank">server status page</a>.';
                 }
                 
-                error.textContent = errorMessage;
+                error.innerHTML = displayError;
                 error.classList.add('active');
                 loading.classList.remove('active');
             } finally {
