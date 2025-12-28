@@ -16,12 +16,47 @@ SMTP_PORT = int(os.getenv('SMTP_PORT', '587'))
 SMTP_EMAIL = os.getenv('SMTP_EMAIL', '')  # Email to send from
 SMTP_PASSWORD = os.getenv('SMTP_PASSWORD', '')  # App password
 
+# Print configuration on startup (without showing full password)
+print("=" * 80)
+print("CONFIGURATION LOADED:")
+print("=" * 80)
+print(f"WORKER_URL: {WORKER_URL}")
+print(f"ALERT_EMAIL: {ALERT_EMAIL if ALERT_EMAIL else '❌ NOT SET'}")
+print(f"SMTP_EMAIL: {SMTP_EMAIL if SMTP_EMAIL else '❌ NOT SET'}")
+print(f"SMTP_PASSWORD: {'✓ SET (' + str(len(SMTP_PASSWORD)) + ' chars)' if SMTP_PASSWORD else '❌ NOT SET'}")
+print(f"SMTP_SERVER: {SMTP_SERVER}")
+print(f"SMTP_PORT: {SMTP_PORT}")
+print("=" * 80)
+
 
 def send_alert_email(error_type, error_message):
     """Send email alert when worker is down"""
-    if not ALERT_EMAIL or not SMTP_EMAIL or not SMTP_PASSWORD:
-        print("Email alerts not configured - skipping")
+    print("\n" + "=" * 80)
+    print("EMAIL ALERT TRIGGERED")
+    print("=" * 80)
+    print(f"Error Type: {error_type}")
+    print(f"Error Message: {error_message}")
+    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    
+    if not ALERT_EMAIL:
+        print("❌ ALERT_EMAIL is empty - cannot send email")
+        print("=" * 80)
         return
+    
+    if not SMTP_EMAIL:
+        print("❌ SMTP_EMAIL is empty - cannot send email")
+        print("=" * 80)
+        return
+        
+    if not SMTP_PASSWORD:
+        print("❌ SMTP_PASSWORD is empty - cannot send email")
+        print("=" * 80)
+        return
+    
+    print(f"✓ All email credentials present")
+    print(f"Sending email to: {ALERT_EMAIL}")
+    print(f"From: {SMTP_EMAIL}")
+    print(f"Server: {SMTP_SERVER}:{SMTP_PORT}")
     
     try:
         msg = MIMEMultipart()
@@ -51,16 +86,33 @@ To fix:
         
         msg.attach(MIMEText(body, 'plain'))
         
+        print(f"Connecting to SMTP server...")
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        server.send_message(msg)
-        server.quit()
+        print(f"✓ Connected to {SMTP_SERVER}:{SMTP_PORT}")
         
-        print(f"Alert email sent to {ALERT_EMAIL}")
+        print(f"Starting TLS...")
+        server.starttls()
+        print(f"✓ TLS started")
+        
+        print(f"Logging in as {SMTP_EMAIL}...")
+        server.login(SMTP_EMAIL, SMTP_PASSWORD)
+        print(f"✓ Login successful")
+        
+        print(f"Sending message...")
+        server.send_message(msg)
+        print(f"✓ Message sent")
+        
+        server.quit()
+        print(f"✓ Connection closed")
+        
+        print(f"✅ SUCCESS! Alert email sent to {ALERT_EMAIL}")
+        print("=" * 80 + "\n")
         
     except Exception as e:
-        print(f"Failed to send alert email: {e}")
+        print(f"❌ FAILED to send alert email")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        print("=" * 80 + "\n")
 
 
 @app.route('/')
@@ -77,9 +129,17 @@ def status():
 @app.route('/leaderboard', methods=['POST'])
 def leaderboard():
     """Forward request to worker server"""
+    print("\n" + "=" * 80)
+    print("LEADERBOARD REQUEST RECEIVED")
+    print("=" * 80)
+    
     try:
         gameweek = request.form.get('gameweek')
         league_id = request.form.get('league_id')
+        
+        print(f"Gameweek: {gameweek}")
+        print(f"League ID: {league_id}")
+        print(f"Forwarding to: {WORKER_URL}/process")
         
         # Forward to worker server
         response = requests.post(
@@ -88,23 +148,36 @@ def leaderboard():
             timeout=300  # 5 minute timeout
         )
         
+        print(f"✓ Worker responded with status: {response.status_code}")
+        print("=" * 80 + "\n")
         return jsonify(response.json())
         
     except requests.exceptions.Timeout:
         error_msg = 'Processing timeout after 5 minutes'
+        print(f"❌ TIMEOUT: {error_msg}")
+        print("Triggering email alert...")
         send_alert_email('Timeout', error_msg)
+        print("=" * 80 + "\n")
         return jsonify({'error': 'Processing timeout. Please try again.'}), 504
         
-    except requests.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError as e:
         error_msg = f'Cannot connect to worker at {WORKER_URL}'
+        print(f"❌ CONNECTION ERROR: {error_msg}")
+        print(f"Details: {str(e)}")
+        print("Triggering email alert...")
         send_alert_email('Connection Failed', error_msg)
+        print("=" * 80 + "\n")
         return jsonify({
             'error': 'Worker server not available. Admin has been notified. Please ensure local worker is running.'
         }), 503
         
     except Exception as e:
         error_msg = str(e)
+        print(f"❌ UNKNOWN ERROR: {error_msg}")
+        print(f"Error type: {type(e).__name__}")
+        print("Triggering email alert...")
         send_alert_email('Unknown Error', error_msg)
+        print("=" * 80 + "\n")
         return jsonify({'error': str(e)}), 500
 
 
@@ -125,6 +198,18 @@ def health():
         ui_status['warning'] = 'Worker server is not responding'
     
     return jsonify(ui_status)
+
+
+@app.route('/test-email', methods=['GET'])
+def test_email():
+    """Test endpoint to manually trigger email"""
+    print("\n" + "🧪 MANUAL EMAIL TEST TRIGGERED")
+    send_alert_email('Test Email', 'This is a manual test of the email system')
+    return jsonify({
+        'message': 'Email test triggered. Check logs and your inbox.',
+        'alert_email': ALERT_EMAIL if ALERT_EMAIL else 'NOT CONFIGURED',
+        'smtp_email': SMTP_EMAIL if SMTP_EMAIL else 'NOT CONFIGURED'
+    })
 
 
 if __name__ == '__main__':
