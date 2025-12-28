@@ -8,7 +8,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: WORKER_URL
-        value: YOUR_NGROK_URL_HERE
+        value: https://unescaped-disepalous-isela.ngrok-free.dev
       - key: ALERT_EMAIL
         value: your-email@gmail.com
       - key: SMTP_EMAIL
