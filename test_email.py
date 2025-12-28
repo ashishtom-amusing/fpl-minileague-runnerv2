@@ -12,8 +12,8 @@ from datetime import datetime
 # ============================================================================
 # CONFIGURE THESE VALUES
 # ============================================================================
-ALERT_EMAIL = "ashish.tom.work@gmail.com"  # Where to send test email
-SMTP_EMAIL = "infinityclaudeuser@gmail.com"  # Gmail account to send from
+ALERT_EMAIL = ""  # Where to send test email
+SMTP_EMAIL = ""  # Gmail account to send from
 SMTP_PASSWORD = "your-app-password-here"  # Gmail app password
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
