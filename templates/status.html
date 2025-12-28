@@ -278,6 +278,61 @@
             transform: translateY(0);
         }
 
+        .contact-btn {
+            width: 100%;
+            padding: 18px;
+            background: var(--dark-bg);
+            color: var(--neon-pink);
+            border: 2px solid var(--neon-pink);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: all 0.3s;
+        }
+
+        .contact-btn:hover {
+            background: rgba(255, 0, 222, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 0, 222, 0.3);
+        }
+
+        .contact-btn:active {
+            transform: translateY(0);
+        }
+
+        .contact-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .contact-response {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            font-size: 0.95rem;
+            display: none;
+        }
+
+        .contact-response.success {
+            display: block;
+            background: rgba(0, 255, 245, 0.1);
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+        }
+
+        .contact-response.error {
+            display: block;
+            background: rgba(255, 0, 100, 0.1);
+            border: 1px solid #ff0064;
+            color: #ff6b9d;
+        }
+
         .last-check {
             text-align: center;
             color: var(--text-muted);
@@ -338,6 +393,12 @@
             <div class="details" id="details">Loading status information...</div>
 
             <button class="refresh-btn" onclick="checkStatus()">🔄 Refresh Status</button>
+            
+            <button class="contact-btn" onclick="contactDeveloper()" id="contactBtn">
+                📧 Contact Developer
+            </button>
+            
+            <div class="contact-response" id="contactResponse"></div>
             
             <div class="last-check" id="last-check"></div>
         </div>
@@ -406,6 +467,46 @@ Worker Reachable: <span style="color: ${data.worker_reachable ? 'var(--neon-cyan
 
         // Auto-refresh every 30 seconds
         setInterval(checkStatus, 30000);
+
+        async function contactDeveloper() {
+            const btn = document.getElementById('contactBtn');
+            const responseDiv = document.getElementById('contactResponse');
+            
+            btn.disabled = true;
+            btn.textContent = '📧 Sending...';
+            responseDiv.className = 'contact-response';
+            responseDiv.style.display = 'none';
+            
+            try {
+                const response = await fetch('/contact-developer', {
+                    method: 'POST'
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    responseDiv.className = 'contact-response success';
+                    responseDiv.innerHTML = `
+                        <strong>✅ Message Sent!</strong><br>
+                        The developer has been notified about the issue.<br>
+                        You should receive a response soon.
+                    `;
+                } else {
+                    throw new Error(data.error || 'Failed to send message');
+                }
+                
+            } catch (error) {
+                responseDiv.className = 'contact-response error';
+                responseDiv.innerHTML = `
+                    <strong>❌ Failed to Send</strong><br>
+                    ${error.message}<br>
+                    Please try again or contact directly.
+                `;
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📧 Contact Developer';
+            }
+        }
     </script>
 </body>
 </html>
