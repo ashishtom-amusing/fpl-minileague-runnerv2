@@ -3,7 +3,7 @@ services:
     name: fpl-leaderboard-ui
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --timeout 300 --workers 1
+    startCommand: gunicorn app:app --timeout 300 --graceful-timeout 180 --workers 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
