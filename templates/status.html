@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FPL Worker Status</title>
+    <title>FPL Server Status</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -11,131 +12,343 @@
             box-sizing: border-box;
         }
 
+        :root {
+            --neon-cyan: #00fff5;
+            --neon-pink: #ff00de;
+            --dark-bg: #0a0e1a;
+            --card-bg: #141824;
+            --text-light: #e0e6ff;
+            --text-muted: #7a8299;
+            --border-color: #1e2538;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--dark-bg);
+            color: var(--text-light);
             min-height: 100vh;
-            display: flex;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(0, 255, 245, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 222, 0.05) 0%, transparent 50%);
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(255, 255, 255, 0.01) 0px,
+                    transparent 1px,
+                    transparent 2px,
+                    rgba(255, 255, 255, 0.01) 3px
+                );
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .header h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            margin-bottom: 10px;
+            animation: glowPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { filter: drop-shadow(0 0 20px rgba(0, 255, 245, 0.4)); }
+            50% { filter: drop-shadow(0 0 35px rgba(255, 0, 222, 0.6)); }
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .back-link {
+            display: inline-flex;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--neon-cyan);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+
+        .back-link:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 245, 0.3);
+            transform: translateY(-2px);
         }
 
         .status-card {
-            background: white;
-            border-radius: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
             padding: 40px;
-            max-width: 600px;
-            width: 100%;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
         }
 
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 30px;
-            text-align: center;
-            color: #333;
+        .status-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
 
         .status-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px;
-            margin-bottom: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
             border-radius: 12px;
-            background: #f5f5f5;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            transition: all 0.3s;
+        }
+
+        .status-item:hover {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 255, 245, 0.1);
         }
 
         .status-label {
             font-weight: 600;
-            color: #555;
+            color: var(--text-light);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-icon {
+            font-size: 1.5rem;
         }
 
         .status-indicator {
-            padding: 8px 20px;
+            padding: 10px 24px;
             border-radius: 20px;
-            font-weight: 600;
+            font-weight: 700;
             font-size: 0.9rem;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; box-shadow: 0 0 10px currentColor; }
+            50% { opacity: 0.6; }
         }
 
         .status-ok {
-            background: #4caf50;
-            color: white;
+            background: rgba(0, 255, 245, 0.15);
+            color: var(--neon-cyan);
+            border: 1px solid var(--neon-cyan);
+        }
+
+        .status-ok .status-dot {
+            background: var(--neon-cyan);
         }
 
         .status-error {
-            background: #f44336;
-            color: white;
+            background: rgba(255, 0, 100, 0.15);
+            color: #ff0064;
+            border: 1px solid #ff0064;
+        }
+
+        .status-error .status-dot {
+            background: #ff0064;
         }
 
         .status-loading {
+            background: rgba(255, 152, 0, 0.15);
+            color: #ff9800;
+            border: 1px solid #ff9800;
+        }
+
+        .status-loading .status-dot {
             background: #ff9800;
-            color: white;
         }
 
         .details {
-            margin-top: 20px;
-            padding: 20px;
-            background: #f9f9f9;
+            margin-top: 30px;
+            padding: 25px;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
             border-radius: 12px;
-            font-family: monospace;
             font-size: 0.9rem;
+            line-height: 1.8;
+        }
+
+        .details strong {
+            color: var(--neon-cyan);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .warning {
+            background: rgba(255, 0, 100, 0.1);
+            border: 1px solid #ff0064;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            color: #ff6b9d;
         }
 
         .refresh-btn {
             width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 18px;
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-pink));
+            color: var(--dark-bg);
             border: none;
             border-radius: 12px;
             font-size: 1rem;
-            font-weight: 600;
+            font-weight: 700;
+            font-family: 'Rajdhani', sans-serif;
+            text-transform: uppercase;
+            letter-spacing: 2px;
             cursor: pointer;
-            margin-top: 20px;
-            transition: transform 0.2s;
+            margin-top: 30px;
+            transition: all 0.3s;
         }
 
         .refresh-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 255, 245, 0.4);
+        }
+
+        .refresh-btn:active {
+            transform: translateY(0);
         }
 
         .last-check {
             text-align: center;
-            color: #999;
+            color: var(--text-muted);
             font-size: 0.85rem;
-            margin-top: 15px;
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .status-item {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .status-label {
+                justify-content: center;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="status-card">
-        <h1>🔍 FPL Worker Status</h1>
-        
-        <div class="status-item">
-            <span class="status-label">UI Server</span>
-            <span class="status-indicator status-loading" id="ui-status">Checking...</span>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Server Status</h1>
+            <p>System Health Monitor</p>
+            <a href="/" class="back-link">
+                ← Back to Leaderboard
+            </a>
         </div>
 
-        <div class="status-item">
-            <span class="status-label">Worker Server</span>
-            <span class="status-indicator status-loading" id="worker-status">Checking...</span>
+        <div class="status-card">
+            <div class="status-item">
+                <span class="status-label">
+                    <span class="status-icon">🌐</span>
+                    UI Server
+                </span>
+                <span class="status-indicator status-loading" id="ui-status">
+                    <span class="status-dot"></span>
+                    Checking...
+                </span>
+            </div>
+
+            <div class="status-item">
+                <span class="status-label">
+                    <span class="status-icon">⚡</span>
+                    Worker Server
+                </span>
+                <span class="status-indicator status-loading" id="worker-status">
+                    <span class="status-dot"></span>
+                    Checking...
+                </span>
+            </div>
+
+            <div class="details" id="details">Loading status information...</div>
+
+            <button class="refresh-btn" onclick="checkStatus()">🔄 Refresh Status</button>
+            
+            <div class="last-check" id="last-check"></div>
         </div>
-
-        <div class="details" id="details">Loading status...</div>
-
-        <button class="refresh-btn" onclick="checkStatus()">🔄 Refresh Status</button>
-        
-        <div class="last-check" id="last-check"></div>
     </div>
 
     <script>
         async function checkStatus() {
+            document.getElementById('ui-status').innerHTML = '<span class="status-dot"></span>Checking...';
             document.getElementById('ui-status').className = 'status-indicator status-loading';
-            document.getElementById('ui-status').textContent = 'Checking...';
+            document.getElementById('worker-status').innerHTML = '<span class="status-dot"></span>Checking...';
             document.getElementById('worker-status').className = 'status-indicator status-loading';
-            document.getElementById('worker-status').textContent = 'Checking...';
 
             try {
                 const response = await fetch('/health');
@@ -143,40 +356,48 @@
 
                 // UI Status
                 if (data.status === 'ok') {
+                    document.getElementById('ui-status').innerHTML = '<span class="status-dot"></span>Online';
                     document.getElementById('ui-status').className = 'status-indicator status-ok';
-                    document.getElementById('ui-status').textContent = '✓ Online';
                 } else {
+                    document.getElementById('ui-status').innerHTML = '<span class="status-dot"></span>Offline';
                     document.getElementById('ui-status').className = 'status-indicator status-error';
-                    document.getElementById('ui-status').textContent = '✗ Offline';
                 }
 
                 // Worker Status
                 if (data.worker_reachable) {
+                    document.getElementById('worker-status').innerHTML = '<span class="status-dot"></span>Online';
                     document.getElementById('worker-status').className = 'status-indicator status-ok';
-                    document.getElementById('worker-status').textContent = '✓ Online';
                 } else {
+                    document.getElementById('worker-status').innerHTML = '<span class="status-dot"></span>Offline';
                     document.getElementById('worker-status').className = 'status-indicator status-error';
-                    document.getElementById('worker-status').textContent = '✗ Offline';
                 }
 
                 // Details
                 const details = document.getElementById('details');
-                details.innerHTML = `
+                let detailsHTML = `
 <strong>Configuration:</strong><br>
-Worker URL: ${data.worker_url}<br>
-Worker Reachable: ${data.worker_reachable ? 'Yes' : 'No'}<br>
-${data.warning ? '<br><strong style="color: #f44336;">⚠️ ' + data.warning + '</strong>' : ''}
-${data.worker && data.worker.max_workers ? '<br>Max Workers: ' + data.worker.max_workers : ''}
+Worker URL: <span style="color: var(--neon-pink)">${data.worker_url}</span><br>
+Worker Reachable: <span style="color: ${data.worker_reachable ? 'var(--neon-cyan)' : '#ff0064'}">${data.worker_reachable ? 'Yes ✓' : 'No ✗'}</span><br>
                 `.trim();
+
+                if (data.worker && data.worker.max_workers) {
+                    detailsHTML += `<br>Max Workers: <span style="color: var(--neon-cyan)">${data.worker.max_workers}</span>`;
+                }
+
+                if (data.warning) {
+                    detailsHTML += `<div class="warning"><strong>⚠️ Warning:</strong><br>${data.warning}</div>`;
+                }
+
+                details.innerHTML = detailsHTML;
 
                 // Last check time
                 document.getElementById('last-check').textContent = 
                     'Last checked: ' + new Date().toLocaleTimeString();
 
             } catch (error) {
+                document.getElementById('ui-status').innerHTML = '<span class="status-dot"></span>Error';
                 document.getElementById('ui-status').className = 'status-indicator status-error';
-                document.getElementById('ui-status').textContent = '✗ Error';
-                document.getElementById('details').textContent = 'Error: ' + error.message;
+                document.getElementById('details').innerHTML = '<div class="warning">Error: ' + error.message + '</div>';
             }
         }
 
