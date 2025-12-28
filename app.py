@@ -58,13 +58,17 @@ def send_alert_email(error_type, error_message):
     print(f"From: {SMTP_EMAIL}")
     print(f"Server: {SMTP_SERVER}:{SMTP_PORT}")
     
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = SMTP_EMAIL
-        msg['To'] = ALERT_EMAIL
-        msg['Subject'] = f'🚨 FPL Worker Alert - {error_type}'
-        
-        body = f"""
+    # Send email in background thread to avoid blocking
+    import threading
+    
+    def send_in_background():
+        try:
+            msg = MIMEMultipart()
+            msg['From'] = SMTP_EMAIL
+            msg['To'] = ALERT_EMAIL
+            msg['Subject'] = f'🚨 FPL Worker Alert - {error_type}'
+            
+            body = f"""
 FPL Leaderboard Worker Alert
 ============================
 
@@ -83,36 +87,43 @@ To fix:
 - Start ngrok: ngrok http 5001
 - Update WORKER_URL in Render if ngrok URL changed
 """
-        
-        msg.attach(MIMEText(body, 'plain'))
-        
-        print(f"Connecting to SMTP server...")
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        print(f"✓ Connected to {SMTP_SERVER}:{SMTP_PORT}")
-        
-        print(f"Starting TLS...")
-        server.starttls()
-        print(f"✓ TLS started")
-        
-        print(f"Logging in as {SMTP_EMAIL}...")
-        server.login(SMTP_EMAIL, SMTP_PASSWORD)
-        print(f"✓ Login successful")
-        
-        print(f"Sending message...")
-        server.send_message(msg)
-        print(f"✓ Message sent")
-        
-        server.quit()
-        print(f"✓ Connection closed")
-        
-        print(f"✅ SUCCESS! Alert email sent to {ALERT_EMAIL}")
-        print("=" * 80 + "\n")
-        
-    except Exception as e:
-        print(f"❌ FAILED to send alert email")
-        print(f"Error type: {type(e).__name__}")
-        print(f"Error message: {str(e)}")
-        print("=" * 80 + "\n")
+            
+            msg.attach(MIMEText(body, 'plain'))
+            
+            print(f"Connecting to SMTP server...")
+            server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=30)
+            print(f"✓ Connected to {SMTP_SERVER}:{SMTP_PORT}")
+            
+            print(f"Starting TLS...")
+            server.starttls()
+            print(f"✓ TLS started")
+            
+            print(f"Logging in as {SMTP_EMAIL}...")
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            print(f"✓ Login successful")
+            
+            print(f"Sending message...")
+            server.send_message(msg)
+            print(f"✓ Message sent")
+            
+            server.quit()
+            print(f"✓ Connection closed")
+            
+            print(f"✅ SUCCESS! Alert email sent to {ALERT_EMAIL}")
+            print("=" * 80 + "\n")
+            
+        except Exception as e:
+            print(f"❌ FAILED to send alert email")
+            print(f"Error type: {type(e).__name__}")
+            print(f"Error message: {str(e)}")
+            print("=" * 80 + "\n")
+    
+    # Start background thread
+    print("Starting background email thread...")
+    email_thread = threading.Thread(target=send_in_background, daemon=True)
+    email_thread.start()
+    print("✓ Email thread started (sending in background)")
+    print("=" * 80 + "\n")
 
 
 @app.route('/')
