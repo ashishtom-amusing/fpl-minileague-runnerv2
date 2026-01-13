@@ -187,10 +187,30 @@
             transition: all 0.3s;
         }
 
-        .input-group input:focus {
+        .input-group select {
+            width: 100%;
+            padding: 14px 18px;
+            background: var(--dark-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus {
             outline: none;
             border-color: var(--neon-cyan);
             box-shadow: 0 0 20px rgba(0, 255, 245, 0.2);
+        }
+
+        .input-group select option {
+            background: var(--dark-bg);
+            color: var(--text-light);
+            padding: 10px;
         }
 
         .btn-fetch {
@@ -691,11 +711,54 @@
                 <div class="form-grid">
                     <div class="input-group">
                         <label for="gameweek">Gameweek</label>
-                        <input type="number" id="gameweek" name="gameweek" min="1" max="38" required placeholder="Enter gameweek (1-38)">
+                        <select id="gameweek" name="gameweek" required>
+                            <option value="">Select Gameweek</option>
+                            <option value="1">GW 1</option>
+                            <option value="2">GW 2</option>
+                            <option value="3">GW 3</option>
+                            <option value="4">GW 4</option>
+                            <option value="5">GW 5</option>
+                            <option value="6">GW 6</option>
+                            <option value="7">GW 7</option>
+                            <option value="8">GW 8</option>
+                            <option value="9">GW 9</option>
+                            <option value="10">GW 10</option>
+                            <option value="11">GW 11</option>
+                            <option value="12">GW 12</option>
+                            <option value="13">GW 13</option>
+                            <option value="14">GW 14</option>
+                            <option value="15">GW 15</option>
+                            <option value="16">GW 16</option>
+                            <option value="17" selected>GW 17</option>
+                            <option value="18">GW 18</option>
+                            <option value="19">GW 19</option>
+                            <option value="20">GW 20</option>
+                            <option value="21">GW 21</option>
+                            <option value="22">GW 22</option>
+                            <option value="23">GW 23</option>
+                            <option value="24">GW 24</option>
+                            <option value="25">GW 25</option>
+                            <option value="26">GW 26</option>
+                            <option value="27">GW 27</option>
+                            <option value="28">GW 28</option>
+                            <option value="29">GW 29</option>
+                            <option value="30">GW 30</option>
+                            <option value="31">GW 31</option>
+                            <option value="32">GW 32</option>
+                            <option value="33">GW 33</option>
+                            <option value="34">GW 34</option>
+                            <option value="35">GW 35</option>
+                            <option value="36">GW 36</option>
+                            <option value="37">GW 37</option>
+                            <option value="38">GW 38</option>
+                        </select>
                     </div>
                     <div class="input-group">
-                        <label for="league_id">League ID</label>
-                        <input type="number" id="league_id" name="league_id" required placeholder="Enter your league ID">
+                        <label for="league_selector">Select League</label>
+                        <select id="league_selector" onchange="handleLeagueSelection()">
+                            <option value="">-- Favorite Leagues --</option>
+                        </select>
+                        <input type="number" id="league_id" name="league_id" required placeholder="Or enter League ID" style="margin-top: 10px;">
                     </div>
                     <button type="submit" class="btn-fetch" id="fetchBtn">
                         Fetch Data
@@ -781,6 +844,37 @@
         const progressDetails = document.getElementById('progressDetails');
 
         let currentData = null;
+
+        // Load favorite leagues from backend
+        async function loadFavoriteLeagues() {
+            try {
+                const response = await fetch('/favorite-leagues');
+                const leagues = await response.json();
+                
+                const selector = document.getElementById('league_selector');
+                leagues.forEach(league => {
+                    const option = document.createElement('option');
+                    option.value = league.id;
+                    option.textContent = league.name;
+                    selector.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Failed to load favorite leagues:', error);
+            }
+        }
+
+        // Handle league selection from dropdown
+        function handleLeagueSelection() {
+            const selector = document.getElementById('league_selector');
+            const leagueIdInput = document.getElementById('league_id');
+            
+            if (selector.value) {
+                leagueIdInput.value = selector.value;
+            }
+        }
+
+        // Load favorites on page load
+        loadFavoriteLeagues();
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
