@@ -6,12 +6,16 @@ app = Flask(__name__)
 
 # Environment variables
 WORKER_URL = os.getenv('WORKER_URL', 'http://localhost:5001')
+DEFAULT_LEAGUE_ID = os.getenv('DEFAULT_LEAGUE_ID', '208271')
+FAVORITE_LEAGUES = os.getenv('FAVORITE_LEAGUES', '')  # Comma-separated: "208271:My League,123456:Friends League"
 
 # Print configuration on startup
 print("=" * 80)
 print("CONFIGURATION LOADED:")
 print("=" * 80)
 print(f"WORKER_URL: {WORKER_URL}")
+print(f"DEFAULT_LEAGUE_ID: {DEFAULT_LEAGUE_ID}")
+print(f"FAVORITE_LEAGUES: {FAVORITE_LEAGUES if FAVORITE_LEAGUES else 'Not configured'}")
 print("=" * 80)
 
 
@@ -92,6 +96,34 @@ def health():
         ui_status['warning'] = 'Worker server is not responding'
     
     return jsonify(ui_status)
+
+
+@app.route('/favorite-leagues', methods=['GET'])
+def favorite_leagues():
+    """Return list of favorite leagues"""
+    leagues = []
+    
+    # Always add default league
+    leagues.append({
+        'id': DEFAULT_LEAGUE_ID,
+        'name': f'Default League ({DEFAULT_LEAGUE_ID})'
+    })
+    
+    # Parse and add configured favorite leagues
+    if FAVORITE_LEAGUES:
+        try:
+            for league in FAVORITE_LEAGUES.split(','):
+                league = league.strip()
+                if ':' in league:
+                    league_id, league_name = league.split(':', 1)
+                    leagues.append({
+                        'id': league_id.strip(),
+                        'name': league_name.strip()
+                    })
+        except Exception as e:
+            print(f"Error parsing FAVORITE_LEAGUES: {e}")
+    
+    return jsonify(leagues)
 
 
 if __name__ == '__main__':
