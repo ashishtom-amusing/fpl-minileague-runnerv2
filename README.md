@@ -133,14 +133,6 @@ nohup gunicorn -w 2 --threads 2 -b 0.0.0.0:5001 --timeout 120 worker:app > worke
 
 ---
 
-### Logging
-
-```bash
-tail -f worker.log
-```
-
----
-
 ## 🧠 Worker Configuration (Your Machine)
 
 ### CPU Info
@@ -195,23 +187,6 @@ lsof -i:5001
 
 ---
 
-## 🌐 Networking
-
-### Bind Address
-
-```bash
-0.0.0.0:5001
-```
-
-* Exposes service publicly
-* Accessible via:
-
-```text
-http://<server-ip>:5001
-```
-
----
-
 ## ⚡ Performance Notes
 
 ### Worker Rule (General)
@@ -239,40 +214,6 @@ http://<server-ip>:5001
 
 * Prevents stuck workers
 * Auto-recovers from hanging requests
-
----
-
-## 📊 Command Cheatsheet
-
-### Start Server
-
-```bash
-nohup gunicorn -w 2 --threads 2 -b 0.0.0.0:5001 --timeout 120 worker:app > worker.log 2>&1 &
-```
-
----
-
-### Stop Server
-
-```bash
-pkill -f gunicorn
-```
-
----
-
-### Check Running
-
-```bash
-ps -ef | grep gunicorn
-```
-
----
-
-### Check Port
-
-```bash
-lsof -i:5001
-```
 
 ---
 
