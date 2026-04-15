@@ -307,6 +307,235 @@ python worker.py
 Visit: `http://localhost:5000`
 
 ---
+# 🚀 FPL Worker – Quick Reference (Production Setup)
+
+---
+
+## 🧰 Environment Setup
+
+### Python & Pip Fix
+
+```bash
+python3 --version
+pip3 --version
+```
+
+If missing:
+
+```bash
+sudo apt update
+sudo apt install python3 python3-pip python3-venv -y
+```
+
+---
+
+### Virtual Environment
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
+
+---
+
+### Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+If PEP 668 error:
+
+```bash
+# Use venv (recommended)
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+---
+
+## ⚙️ Gunicorn Setup
+
+### Basic Command
+
+```bash
+gunicorn -w 2 --threads 2 -b 0.0.0.0:5001 worker:app
+```
+
+---
+
+### Background Execution (nohup)
+
+```bash
+nohup gunicorn -w 2 --threads 2 -b 0.0.0.0:5001 --timeout 120 worker:app > worker.log 2>&1 &
+```
+
+---
+
+### Logging
+
+```bash
+tail -f worker.log
+```
+
+---
+
+## 🧠 Worker Configuration (Your Machine)
+
+### CPU Info
+
+* 2 logical CPUs
+
+### Final Config Used
+
+```bash
+-w 2 --threads 2
+```
+
+### Reasoning
+
+* Avoid CPU contention (too many workers)
+* Threads improve I/O handling
+* Balanced concurrency for small instance
+
+---
+
+## 🔪 Process Management
+
+### Kill All Gunicorn Processes
+
+```bash
+pkill -f gunicorn
+```
+
+---
+
+### Kill by Port
+
+```bash
+fuser -k 5001/tcp
+```
+
+---
+
+### Check Running Processes
+
+```bash
+ps -ef | grep gunicorn
+```
+
+---
+
+### Check Port Usage
+
+```bash
+lsof -i:5001
+```
+
+---
+
+## 🌐 Networking
+
+### Bind Address
+
+```bash
+0.0.0.0:5001
+```
+
+* Exposes service publicly
+* Accessible via:
+
+```text
+http://<server-ip>:5001
+```
+
+---
+
+### Alternative (Local Only)
+
+```bash
+127.0.0.1:5001
+```
+
+* Not publicly accessible
+* Used when behind reverse proxy
+
+---
+
+## ⚡ Performance Notes
+
+### Worker Rule (General)
+
+```text
+(2 × CPU) + 1
+```
+
+### Your Case Adjustment
+
+* Machine too small → reduce workers
+* Final choice:
+
+```bash
+-w 2 --threads 2
+```
+
+---
+
+### Timeout Setting
+
+```bash
+--timeout 120
+```
+
+* Prevents stuck workers
+* Auto-recovers from hanging requests
+
+---
+
+## 📊 Command Cheatsheet
+
+### Start Server
+
+```bash
+nohup gunicorn -w 2 --threads 2 -b 0.0.0.0:5001 --timeout 120 worker:app > worker.log 2>&1 &
+```
+
+---
+
+### Stop Server
+
+```bash
+pkill -f gunicorn
+```
+
+---
+
+### Check Running
+
+```bash
+ps -ef | grep gunicorn
+```
+
+---
+
+### Check Port
+
+```bash
+lsof -i:5001
+```
+
+---
+
+## ✅ Notes
+
+* Gunicorn = 1 master + N workers
+* Threads help with I/O-heavy tasks
+* `nohup` keeps process alive after logout
+* Always use virtual environment (PEP 668 safe)
+
+---
+
 
 ## 📚 Documentation
 
