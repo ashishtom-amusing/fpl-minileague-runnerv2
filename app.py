@@ -36,32 +36,33 @@ def leaderboard():
     print("\n" + "=" * 80)
     print("LEADERBOARD REQUEST RECEIVED")
     print("=" * 80)
-    
+
     try:
         gameweek = request.form.get('gameweek')
         league_id = request.form.get('league_id')
-        
+
         print(f"Gameweek: {gameweek}")
         print(f"League ID: {league_id}")
         print(f"Forwarding to: {WORKER_URL}/process")
-        
+
         # Forward to worker server
         response = requests.post(
             f'{WORKER_URL}/process',
             json={'gameweek': int(gameweek), 'league_id': int(league_id)},
             timeout=300  # 5 minute timeout
         )
-        
+
         print(f"✓ Worker responded with status: {response.status_code}")
         print("=" * 80 + "\n")
+
         return jsonify(response.json())
-        
+
     except requests.exceptions.Timeout:
         error_msg = 'Processing timeout after 5 minutes'
         print(f"❌ TIMEOUT: {error_msg}")
         print("=" * 80 + "\n")
         return jsonify({'error': 'Processing timeout. Please try again.'}), 504
-        
+
     except requests.exceptions.ConnectionError as e:
         error_msg = f'Cannot connect to worker at {WORKER_URL}'
         print(f"❌ CONNECTION ERROR: {error_msg}")
@@ -70,7 +71,7 @@ def leaderboard():
         return jsonify({
             'error': 'Worker server not available. Please check the status page and contact the developer if the issue persists.'
         }), 503
-        
+
     except Exception as e:
         error_msg = str(e)
         print(f"❌ UNKNOWN ERROR: {error_msg}")
@@ -79,11 +80,56 @@ def leaderboard():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/tiebreaker', methods=['POST'])
+def tiebreaker():
+    """Forward tiebreaker request to worker server.
+    Expects JSON: { gameweek: int, managers: [ {team_id, net_points, ...}, ... ] }
+    """
+    print("\n" + "=" * 80)
+    print("TIEBREAKER REQUEST RECEIVED")
+    print("=" * 80)
+
+    try:
+        payload = request.get_json()
+        gameweek = payload.get('gameweek')
+        managers = payload.get('managers', [])
+
+        print(f"Gameweek: {gameweek}")
+        print(f"Managers in payload: {len(managers)}")
+        print(f"Forwarding to: {WORKER_URL}/tiebreaker")
+
+        response = requests.post(
+            f'{WORKER_URL}/tiebreaker',
+            json={'gameweek': int(gameweek), 'managers': managers},
+            timeout=120
+        )
+
+        print(f"✓ Worker responded with status: {response.status_code}")
+        print("=" * 80 + "\n")
+
+        return jsonify(response.json())
+
+    except requests.exceptions.Timeout:
+        print("❌ TIEBREAKER TIMEOUT")
+        print("=" * 80 + "\n")
+        return jsonify({'error': 'Tiebreaker timeout. Please try again.'}), 504
+
+    except requests.exceptions.ConnectionError as e:
+        print(f"❌ CONNECTION ERROR: {str(e)}")
+        print("=" * 80 + "\n")
+        return jsonify({'error': 'Worker server not available for tiebreaker.'}), 503
+
+    except Exception as e:
+        print(f"❌ UNKNOWN ERROR: {str(e)}")
+        print("=" * 80 + "\n")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint - checks both UI and worker"""
     ui_status = {'status': 'ok', 'worker_url': WORKER_URL}
-    
+
     # Try to ping worker
     try:
         response = requests.get(f'{WORKER_URL}/health', timeout=5)
@@ -94,7 +140,7 @@ def health():
         ui_status['worker'] = {'status': 'unreachable'}
         ui_status['worker_reachable'] = False
         ui_status['warning'] = 'Worker server is not responding'
-    
+
     return jsonify(ui_status)
 
 
@@ -102,13 +148,13 @@ def health():
 def favorite_leagues():
     """Return list of favorite leagues"""
     leagues = []
-    
+
     # Always add default league
     leagues.append({
         'id': DEFAULT_LEAGUE_ID,
         'name': f'Default League ({DEFAULT_LEAGUE_ID})'
     })
-    
+
     # Parse and add configured favorite leagues
     if FAVORITE_LEAGUES:
         try:
@@ -122,7 +168,7 @@ def favorite_leagues():
                     })
         except Exception as e:
             print(f"Error parsing FAVORITE_LEAGUES: {e}")
-    
+
     return jsonify(leagues)
 
 
