@@ -1050,6 +1050,7 @@
             tiebreakerActive = false;
             tiebreakerBtn.classList.remove('active');
             tiebreakerBtn.textContent = '🎯 Break Ties (Top 15)';
+            // Hide both the <th> headers and any <td> cells with .tb-col
             document.querySelectorAll('.tb-col').forEach(el => el.classList.remove('visible'));
         }
 
@@ -1216,6 +1217,9 @@
                     tiebreakerOrder.push(m.team_id);
                 });
                 tiebreakerActive = true;
+
+                // Reveal the extra columns — includes both <th> headers and <td> cells
+                document.querySelectorAll('.tb-col').forEach(el => el.classList.add('visible'));
 
                 // Snap sort to "Net" so displayed ordering matches the tiebreaker cascade
                 document.querySelectorAll('.sort-btn').forEach(btn => {
